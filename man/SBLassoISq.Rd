@@ -51,7 +51,7 @@ Print iterations, logical. Default TRUE.
 \details{
 Details on the Safe-Bayesian lasso can be found in Chapter 2 of (de Heide, 2016). The implementation of the Gibbs sampler is based on the BLR package of (de los Campos \emph{et al.}, 2009).
 
-The Safe-Bayesian algorithm was proposed by Gruenwald (2012) as a method to learn the learning rate for the generalized posterior to deal with model misspecification.
+The Safe-Bayesian algorithm was proposed by Grunwald (2012) as a method to learn the learning rate for the generalized posterior to deal with model misspecification.
 }
 \value{
 \item{$y}{
@@ -99,7 +99,7 @@ The Safe-Bayesian Lasso. \emph{Master Thesis, Leiden University}.
 de los Campos G., H. Naya, D. Gianola, J. Crossa, A. Legarra, E. Manfredi, K. Weigel and J. Cotes. 2009.
 Predicting Quantitative Traits with Regression Models for Dense Molecular Markers and Pedigree. \emph{Genetics} \bold{182}: 375-385.
 
-Gruenwald, P.D. 2012.
+Grunwald, P.D. 2012.
 chapter The Safe Bayesian. \emph{Algorithmic Learning Theory: 23rd International Conference, ALT 2012, Lyon, France, October 29-31, 2012. Proceedings}. 169-183. Springer Berlin Heidelberg}
 \author{
 R. de Heide}
@@ -116,11 +116,12 @@ for (i in 1:10) {
 
 plot(x,y)
 
+\dontrun{
 # Let I-square-SafeBayes learn the learning rate 
 sbobj <- SBLassoISq(y, x, etaseq=c(1, 0.5, 0.25))
 
 # eta 
-sbobj$eta.min
+sbobj$eta.min}
 
 }
 \keyword{SafeBayes}

@@ -1,20 +1,18 @@
-// needs to come first, BDR 2013-10-30, and for gcc 6 we need NO_C_HEADERS
 #include <new>
 #include <cmath>
 #include <cstdlib>
 
 // for Solaris
 using namespace std;
+#if defined(__SUNPRO_CC) && (__cplusplus < 201103L)
+// This is not C++98 and Solaris CC's headers do not include it
+extern "C" int snprintf(char *str, size_t size, const char *format, ...);
+#endif
 
 #include "wheeler.h"
-//#include <float.h>
-//
-#define NO_C_HEADERS
 #include <R.h>
 #include <Rmath.h>
 
-// snprintf is in fact not C++, but R.h used to include this
-#include <stdio.h> // for snprintf
 #include <cstring> // for memset
 
 #include "dists.h"
@@ -6092,6 +6090,7 @@ ULONG MWC1019(void){
 	int	i = endQ-1; 
 
 	t = 147669672L*Q[i] + Q[endQ]; 
+// ULONG is unsigned long: this only makes sense for a 64-bit type
 	Q[endQ] = (t>>32);
 	if(i>0) 
 		return(Q[i--] = t);

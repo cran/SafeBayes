@@ -58,7 +58,7 @@ Details on the generalized Bayesian lasso can be found in Chapter 2 of (de Heide
 
 
 
-Several authors have brought forward the idea of equipping Bayesian updating with a learning rate \eqn{\eta}{eta}, resulting in an \eqn{\eta}{eta}-generalized posterior (Vovk (1990), McAllester (2003), Seeger (2002), Catoni (2007), Audibert (2004), Zhang (2004)). Gruenwald (2012) suggested its use as a method to deal with model misspecification. In the \eqn{\eta}{eta}-generalized posterior, the likelihood is raised to the power \eqn{\eta}{eta} in order to trade the relative weight of the likelihood and the prior, where \eqn{\eta = 1}{eta = 1} corresponds to standard Bayes.
+Several authors have brought forward the idea of equipping Bayesian updating with a learning rate \eqn{\eta}{eta}, resulting in an \eqn{\eta}{eta}-generalized posterior (Vovk (1990), McAllester (2003), Seeger (2002), Catoni (2007), Audibert (2004), Zhang (2004)). Grunwald (2012) suggested its use as a method to deal with model misspecification. In the \eqn{\eta}{eta}-generalized posterior, the likelihood is raised to the power \eqn{\eta}{eta} in order to trade the relative weight of the likelihood and the prior, where \eqn{\eta = 1}{eta = 1} corresponds to standard Bayes.
 }
 \value{
 \item{$y}{
@@ -111,7 +111,7 @@ Bayesian generalized double pareto shrinkage. \emph{Statistica Sinica} \bold{23}
 Catoni, O. 2007.
 PAC-Bayesian Supervised Classification. Lecture Notes - Monograph Series. IMS.
 
-Gruenwald, P.D. 2012.
+Grunwald, P.D. 2012.
 chapter The Safe Bayesian. \emph{Algorithmic Learning Theory: 23rd International Conference, ALT 2012, Lyon, France, October 29-31, 2012. Proceedings}. 169-183. Springer Berlin Heidelberg
 
 McAllester, D. 2003.

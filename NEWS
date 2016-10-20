@@ -1,0 +1,9 @@
+//
+// Changes and Bug Fixes
+//
+
+* 2016-10-17 *
+- Added GBLassoFV and GBRidgeFV for generalized bayesian lasso and ridge regression with fixed variance.
+- Fixed SBLassoISq, SBLassoRSq, SBRidgeISq, SBLassoRSq; omitted to sample the mean in the previous version.
+- Changed rinvgauss from SuppDists (copied because orphaned) not using NO_C_HEADERS anymore. 
+- \dontrun{} for all SafeBayes examples in documentation, because the examples take too much time on CRAN servers.

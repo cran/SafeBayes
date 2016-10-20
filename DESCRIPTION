@@ -1,8 +1,8 @@
 Package: SafeBayes
 Type: Package
 Title: Generalized and Safe-Bayesian Ridge and Lasso Regression
-Version: 1.0
-Date: 2016-05-21
+Version: 1.1
+Date: 2016-10-17
 Authors@R: c(person("Rianne", "de Heide", role = c("aut", "cre"),
 		     email = "r.de.heide@cwi.nl"),
 	      person("Gustavo", "de los Campos", role = "ctb"),
@@ -13,11 +13,11 @@ Description: Functions for Generalized and Safe-Bayesian Ridge and Lasso Regress
 License: GPL-2
 NeedsCompilation: yes
 LazyLoad: true
-Packaged: 2016-05-23 14:48:19 UTC; Rianne
+Packaged: 2016-10-20 08:50:04 UTC; Rianne
 Author: Rianne de Heide [aut, cre],
   Gustavo de los Campos [ctb],
   Paulino Perez Rodriguez [ctb],
   Bob Wheeler [ctb]
 Maintainer: Rianne de Heide <r.de.heide@cwi.nl>
 Repository: CRAN
-Date/Publication: 2016-05-23 17:05:40
+Date/Publication: 2016-10-20 21:04:18

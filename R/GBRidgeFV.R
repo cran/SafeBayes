@@ -1,36 +1,20 @@
-SBRidgeRSq <-
-function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burnIn = 100, thin = 10, minAbsBeta = 1e-09, pIter=TRUE) {
+# Generalized Bayesian Ridge regression with an eta that can be pre-specified for models with fixed variance
+
+
+GBRidgeFV <-
+function (y, X = NULL, sigma2 = NULL, eta = 1, prior = NULL, nIter = 1100, burnIn = 100, thin = 10, minAbsBeta = 1e-09, weights = NULL, pIter=TRUE) {
 
     	y <- as.numeric(y) 
     	n <- length(y)
-    	XL <- as.matrix(X)
-    	
-   		MRSError <- NULL
-    	CMRSEallen <- NULL
-   
-   		ytemp <- y
-   		XLorigineel <- XL
-    	XLtemp <- as.matrix(XL)
-    
-    	for (eta in etaseq) {
-    	
-    	for (specfold in 2:(n-1)) { 
-    
-    		ytest <- ytemp[specfold+1]
-    		y <- ytemp[1:specfold]
-    		XLtrain <- XLtemp[1:specfold,]
-    		XLtest <- XLtemp[specfold+1,]
-    		XL <- as.matrix(XLtrain)
-    		
-		n <- length(y)
+    	XR <- as.matrix(X)
 
     	eta <- as.numeric(eta)
     	if (any(eta > 1) | any(eta < 0)) {
     		stop("One or more of the eta's provided is larger than 1 or smaller than 0 ")
     	}
     	
-    	if (!is.null(XL)) {
-        if (any(is.na(XL)) | nrow(XL) != n) 
+    	if (!is.null(XR)) {
+        if (any(is.na(XR)) | nrow(XR) != n) 
             stop("The number of rows in X does not correspond with that of y or it contains missing values")
     }
 
@@ -43,7 +27,10 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
     
     whichNa <- which(is.na(y))
     nNa <- sum(is.na(y))
-    weights <- rep(1, n)
+    if (is.null(weights)) {
+        weights <- rep(1, n)
+    }
+    
     sumW2 <- sum(weights^2)
     mu <- weighted.mean(x = y, w = weights, na.rm = TRUE)
     yStar <- y * weights
@@ -51,13 +38,14 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
     e <- (yStar - weights * mu)
     
     if (is.null(sigma2)) {
-    	varE <- var(e, na.rm= TRUE)/2 
-    	cat("Sigma^2 is not provided and will be estimated from the data")
-    	}
+    		varE <- var(e, na.rm = TRUE)/2 
+    		cat("Sigma^2 is not provided and will be estimated from the data")
+    		}
     else {
-    	varE <- sigma2
-    	}
-
+    		varE <- sigma2
+    		}
+	
+	sdE <- sqrt(varE)
     post_mu <- 0
     post_varE <- 0
     post_logLik <- 0
@@ -70,28 +58,30 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
             prior$varBR <- list(df = 0, S = 0)
         }
         
-        pR <- ncol(XL)
-        xR2 <- colSums(XL * XL)
+        for (i in 1:n) {
+            XR[i, ] <- weights[i] * XR[i, ]
+        }
+        
+        pR <- ncol(XR)
+        xR2 <- colSums(XR * XR)
 		bR <- rep(0, pR)
-        namesBR <- colnames(XL)
+        namesBR <- colnames(XR)
         varBR <- varE/2/sum(xR2/n)
         
         post_bR <- rep(0, pR)
         post_bR2 <- post_bR
         post_varBR <- 0
         
-        XLstacked <- as.vector(XL)
-        rm(XL)
+        XRstacked <- as.vector(XR)
+        rm(XR)
         
 		time <- proc.time()[3]
 
 # Sampling procedure
     
-    bLsave <- NULL
-    esave <- NULL    
-    
     for (i in 1:nIter) {
     	pL <- pR
+    	XLstacked <- XRstacked
     	xL2 <- xR2
     	bL <- bR
     	varBj <- rep(varBR, pR)
@@ -99,24 +89,20 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
        	ans <- .Call("safe_sample_beta", n, pL, XLstacked, xL2, 
                 bL, e, varBj, varE, minAbsBeta, eta)
             
-       	bR <- bL <- ans[[1]]
+       	bR <- ans[[1]]
        	e <- ans[[2]]
-       	
-       	bLsave <- rbind(bLsave, bL) 
-        esave <- rbind(esave, e)
                         
         SS <- crossprod(bR) + prior$varBR$S
         df <- pR + prior$varBR$df
         varBR <- SS/rchisq(df = df, n = 1)
-        
-        e <- e + weights * mu
+    	
+    	e <- e + weights * mu
         rhs <- sum(weights * e)/varE
         C <- sumW2/varE
         sol <- rhs/C
         mu <- rnorm(n = 1, sd = sqrt(1/C)) + sol
         e <- e - weights * mu
-    	
-        sdE <- sqrt(varE)
+       
         yHat <- yStar - e
         if (nNa > 0) {
             e[whichNa] <- rnorm(n = nNa, sd = sdE)
@@ -147,7 +133,6 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
         }
 
         tmp <- proc.time()[3]
-        
         if (pIter == TRUE) {
         cat(paste(c("Iter: ", "time/iter: ", "varE: "), 
             c(i, round(tmp - time, 3), round(varE, 3))))
@@ -157,38 +142,6 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
         }
         time <- tmp
     }
-    
-        tempbetas <- as.matrix(bLsave)
-        rind <- sample((burnIn+1):nIter, 100, replace=TRUE)
-
-        bLRand <- as.matrix(tempbetas[rind,])
-        blrlang <- dim(bLRand)[1]
-        
-        RSEtemp <- NULL
-        for (k in 1:blrlang) {
-        
-        	bL2 <- bLRand[k,]
-        	ypred <- NULL
-			ynew <- NULL
-			
-			for (i in 1:length(XLtest)) {
-		  		ynew[i] <- bL2[i]*(XLtest[i])
-				}		
-			ypred <- post_mu + sum(ynew)
-			
-        	RSEtemp[k] <- (ytest - ypred)^2
-        }
-        
-        MRSError[specfold-1] <- mean(RSEtemp)
-        }
-        
-        CMRSE <- sum(MRSError)
-        CMRSEallen <- cbind(CMRSEallen, CMRSE)
-        }
-        
-       	indeta <- which.min(CMRSEallen)
-       	eta.min <- etaseq[indeta]
-       	
     
     tmp <- sqrt(post_yHat2 - (post_yHat^2))
     out <- list(y = y, weights = weights, mu = post_mu, varE = post_varE, 
@@ -220,8 +173,7 @@ function (y, X = NULL, sigma2=NULL, etaseq = 1, prior = NULL, nIter = 1100, burn
     out$burnIn <- burnIn
     out$thin <- thin
     
-    out$CMRSEallen <- CMRSEallen
-    out$eta.min <- eta.min
+    out$eta <- eta
     
     return(out)
 }

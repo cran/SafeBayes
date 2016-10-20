@@ -1,28 +1,10 @@
-SBLassoISq <-
-function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, burnIn = 100, thin = 10, minAbsBeta = 1e-09, pIter = TRUE) {
-    
+# Generalized Bayesian Lasso with an eta that can be pre-specified for models with fixed variance
+
+GBLassoFV <-function (y, X = NULL, sigma2 = NULL, eta = 1, prior = NULL, nIter = 1100, burnIn = 100, thin = 10, minAbsBeta = 1e-09, weights = NULL, pIter=TRUE) {
+
     	y <- as.numeric(y) 
     	n <- length(y)
     	XL <- as.matrix(X)
-
-   	Error <- NULL
-    CEallen <- NULL
-   
-   	ytemp <- y
-   	XLorigineel <- XL
-    XLtemp <- XL
- 
-    for (eta in etaseq) {
-
-    for (specfold in 2:(n-1)) { 
-    
-    		ytest <- ytemp[specfold+1]
-    		y <- ytemp[1:specfold]
-    		XLtrain <- XLtemp[1:specfold,]
-    		XLtest <- XLtemp[specfold+1,]
-    		XL <- as.matrix(XLtrain)
-
-	n <- length(y)
 
     	eta <- as.numeric(eta)
     	if (any(eta > 1) | any(eta < 0)) {
@@ -31,20 +13,24 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
 
     if (!is.null(XL)) {
         if (any(is.na(XL)) | nrow(XL) != n) 
-            stop("The number of rows in X does not correspond with that of y or it contains missing values")
+            stop("The number of rows in XL does not correspond with that of y or it contains missing values")
     }
 
     if (is.null(prior)) {
         cat("No prior was provided, improper priors are used.\n")
-        prior = list(lambda = list(shape = 0, rate = 0, type = "random", value = 50))
+        prior = list(lambda = list(shape = 0, 
+            rate = 0, type = "random", value = 50))
     }
     
     nSums <- 0
 
     whichNa <- which(is.na(y))
     nNa <- sum(is.na(y))
-    weights <- rep(1, n)
-    sumW2 <- sum(weights^2)   
+    if (is.null(weights)) {
+        weights <- rep(1, n)
+    }
+
+    sumW2 <- sum(weights^2)
     mu <- weighted.mean(x = y, w = weights, na.rm = TRUE)
     yStar <- y * weights
     yStar[whichNa] <- mu * weights[whichNa]
@@ -57,7 +43,8 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
     else {
     		varE <- sigma2
     		}
-
+	
+	sdE <- sqrt(varE)
     post_mu <- 0
     post_varE <- 0
     post_logLik <- 0
@@ -69,7 +56,11 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
             prior$lambda <- list(shape = 0, rate = 0, value = 50, 
                 type = "random")
         }
-        
+
+        for (i in 1:n) {
+            XL[i, ] <- weights[i] * XL[i, ]
+        }
+
         pL <- ncol(XL)
         xL2 <- colSums(XL*XL)
         bL <- rep(0, pL)
@@ -83,29 +74,28 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
         post_bL <- rep(0, pL)
         post_bL2 <- post_bL
         post_tau2 <- rep(0, pL)
-        
+
         XLstacked <- as.vector(XL)
         rm(XL)
-   
-	time <- proc.time()[3]
+        
+		time <- proc.time()[3]
 
 # Sampling procedure
 
     bLsave <- NULL
     esave <- NULL
-        
+    
     for (i in 1:nIter) {
-            
             varBj <- tau2 * varE
             ans <- .Call("safe_sample_beta", n, pL, XLstacked, xL2, 
                 bL, e, varBj, varE, minAbsBeta, eta)
-                
+
             bL <- ans[[1]]
             e <- ans[[2]]
             
-            bLsave <- rbind(bLsave, bL)
-            esave <- rbind(esave, e)
-            
+            bLsave <- c(bLsave, bL) 
+            esave <- c(esave, e)
+
             nu <- sqrt(varE) * lambda/abs(bL)
             tmp<-NULL
             
@@ -129,6 +119,7 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
                     max = prior$lambda$max)
                   lambda2 <- lambda^2
                 }
+
                 else {
                   rate <- sum(tau2)/2 + prior$lambda$rate
                   shape <- pL + prior$lambda$shape
@@ -142,20 +133,21 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
                 }
             }
             
+            
         e <- e + weights * mu
         rhs <- sum(weights * e)/varE
         C <- sumW2/varE
         sol <- rhs/C
         mu <- rnorm(n = 1, sd = sqrt(1/C)) + sol
         e <- e - weights * mu
+        
 
-		sdE <- sqrt(varE)
         yHat <- yStar - e
         if (nNa > 0) {
             e[whichNa] <- rnorm(n = nNa, sd = sdE)
             yStar[whichNa] <- yHat[whichNa] + e[whichNa]
         }
-        
+       
         if ((i%%thin == 0)) {
             if (i >= burnIn) {
                 nSums <- nSums + 1
@@ -181,37 +173,16 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
         }
 
         tmp <- proc.time()[3]
-        
         if (pIter == TRUE) {
         cat(paste(c("Iter: ", "time/iter: ", "varE: ", "lambda: "), 
-        	    c(i, round(tmp - time, 3), round(varE, 3), round(lambda, 
-        	        3))))
-        	cat("\n")
-        	cat(paste("------------------------------------------------------------"))
-        	cat("\n") 
-        	}
+            c(i, round(tmp - time, 3), round(varE, 3), round(lambda, 
+                3))))
+        cat("\n")
+        cat(paste("------------------------------------------------------------"))
+        cat("\n")
+        }
         time <- tmp
     }
-
-        ypred <- NULL
-        ynew <- NULL
-        
-        for (i in 1:length(XLtest)) {
-        		ynew[i] <- post_bL[i]*XLtest[i]
-        		}
-        ypred <- post_mu + sum(ynew)
-        
-        Error[specfold-1] <- (ytest - ypred)^2
-        }
-        
-        CE <- sum(Error)
-        CEallen <- cbind(CEallen, CE)
-        }
-        
-       	indeta <- which.min(CEallen)
-       	print(indeta)
-       	eta.min <- etaseq[indeta]
-
     
     tmp <- sqrt(post_yHat2 - (post_yHat^2))
     out <- list(y = y, weights = weights, mu = post_mu, varE = post_varE, 
@@ -225,9 +196,11 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
         tmpE <- tmpE[-whichNa]
         tmpSD <- tmpSD[-whichNa]
     }
+    
     out$fit <- list()
-    logLikAtPostMean <- sum(dnorm(tmpE, sd = tmpSD, log = TRUE))
-    out$fit$pD <- -2 * (post_logLik - logLikAtPostMean)
+    out$fit$logLikAtPostMean <- sum(dnorm(tmpE, sd = tmpSD, log = TRUE))
+    out$fit$postMeanLogLik <- post_logLik
+    out$fit$pD <- -2 * (post_logLik - out$fit$logLikAtPostMean)
     out$fit$DIC <- out$fit$pD - 2 * post_logLik
     
     out$lambda <- post_lambda
@@ -242,9 +215,6 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
     out$nIter <- nIter
     out$burnIn <- burnIn
     out$thin <- thin
-    
-    out$CEallen <- CEallen
-    out$eta.min <- eta.min
-    
+
     return(out)
 }

@@ -109,6 +109,13 @@ function (y, X = NULL, sigma2 = NULL, etaseq = 1, prior = NULL, nIter = 1100, bu
         df <- pR + prior$varBR$df
         varBR <- SS/rchisq(df = df, n = 1)
         
+        e <- e + weights * mu
+        rhs <- sum(weights * e)/varE
+        C <- sumW2/varE
+        sol <- rhs/C
+        mu <- rnorm(n = 1, sd = sqrt(1/C)) + sol
+        e <- e - weights * mu
+        
         sdE <- sqrt(varE)
         yHat <- yStar - e
         if (nNa > 0) {

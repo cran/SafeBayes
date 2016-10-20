@@ -1,13 +1,13 @@
-\name{GBRidge}
-\alias{GBRidge}
+\name{GBRidgeFV}
+\alias{GBRidgeFV}
 \title{
-Generalized Bayesian Ridge Regression
+Generalized Bayesian Ridge Regression with fixed variance
 }
 \description{
-The function GBRidge (Generalized Bayesian Ridge Regression) provides a Gibbs sampler to sample the posterior of generalized Bayesian ridge regression models with learning rate \eqn{\eta}{eta}.
+The function GBRidgeFV (Generalized Bayesian Ridge Regression with Fixed Variance) provides a Gibbs sampler to sample the posterior of generalized Bayesian ridge regression models with fixed variance and with learning rate \eqn{\eta}{eta}.
 }
 \usage{
-GBRidge(y, X = NULL, eta = 1, prior = NULL, nIter = 1100, burnIn = 100, 
+GBRidgeFV(y, X = NULL, sigma2 = NULL, eta = 1, prior = NULL, nIter = 1100, burnIn = 100, 
 	thin = 10, minAbsBeta = 1e-09, weights = NULL, pIter = TRUE)
 }
 \arguments{
@@ -16,6 +16,9 @@ Vector of outcome variables, numeric, NA allowed, length \eqn{n}{n}.
 }
   \item{X}{
 Design matrix, numeric, dimension \eqn{n \times p}{n x p}, \eqn{n \geq 2}{n >= 2}.
+}
+  \item{sigma2}{
+Fixed variance parameter \eqn{\sigma^2}{sigma^2}, numeric. Default NULL, in which case the variance will be estimated from the data.
 }
   \item{eta}{
 Learning rate \eqn{\eta}{eta}, numeric, \eqn{0 \leq \eta \leq 1}{0 <= eta <= 1}. Default 1.
@@ -140,7 +143,7 @@ y[indices] <- 0
 plot(x,y)
 
 # Determine the generalized posterior for eta = 0.25
-obj <- GBLasso(y, x, eta=0.25)
+obj <- GBLassoFV(y, x, eta=0.25)
 
 # posterior means of the coefficients beta and intercept mu
 betafour <- obj$bL
